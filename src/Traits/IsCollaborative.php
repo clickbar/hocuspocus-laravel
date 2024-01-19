@@ -7,6 +7,7 @@ namespace Hocuspocus\Traits;
 use Illuminate\Support\Collection;
 use Hocuspocus\Models\Document;
 
+/** @mixin \Illuminate\Database\Eloquent\Model */
 trait IsCollaborative
 {
     public static function bootIsCollaborative()
@@ -35,6 +36,6 @@ trait IsCollaborative
 
     public function getCollaborationDocumentName(): string
     {
-        return urlencode(get_called_class() . ":" . $this->id);
+        return urlencode(get_called_class().":".$this->getKey());
     }
 }
