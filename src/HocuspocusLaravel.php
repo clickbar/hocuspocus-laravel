@@ -52,7 +52,8 @@ class HocuspocusLaravel
             return response();
         }
 
-        $user = $this->getUser($json['payload']['requestParameters']);
+        $user = $request->user();
+
         $document = $this->getDocument($json['payload']['documentName']);
 
         if (!$user->can(config('hocuspocus-laravel.policy_method_name'), $document)) {
@@ -126,22 +127,7 @@ class HocuspocusLaravel
         return response('handled');
     }
 
-    /**
-     * Get the user by the given request parameters.
-     * @param array $requestParameters
-     * @return Authenticatable
-     * @throws AuthenticationException
-     */
-    protected function getUser(array $requestParameters): Authenticatable
-    {
-        $token = $requestParameters[config('hocuspocus-laravel.access_token_parameter')] ?? false;
 
-        if (!$token) {
-            throw new AuthenticationException("Access token not set");
-        }
-
-        return Collaborator::token($token)->model;
-    }
 
     /**
      * Get the document by the given name.
