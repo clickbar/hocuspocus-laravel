@@ -6,6 +6,8 @@ use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -16,39 +18,35 @@ use ReflectionException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Hocuspocus\Contracts\Collaborative;
 use Hocuspocus\Jobs\Change;
-use Hocuspocus\Jobs\Connect;
-use Hocuspocus\Jobs\Disconnect;
-use Hocuspocus\Models\Collaborator;
 
 class HocuspocusLaravel
 {
     const EVENT_ON_CHANGE = 'change';
-    const EVENT_ON_CONNECT = 'connect';
     const EVENT_ON_CREATE_DOCUMENT = 'create';
-    const EVENT_ON_DISCONNECT = 'disconnect';
 
     /**
      * Handle an incoming webhook.
-     * @param Request $request
-     * @throws ReflectionException|AuthorizationException|AuthenticationException
+     * @param  Request  $request
+     * @return Application|ResponseFactory|\Illuminate\Foundation\Application|Response|void
+     * @throws ReflectionException
      */
     public function handleWebhook(Request $request)
     {
-        if (!$this->verifySignature($request)) {
+        if (! $this->verifySignature($request)) {
             throw new BadRequestException('Invalid signature');
         }
 
         $json = json_decode($request->getContent() ?: '{}', true);
 
         if (
-            !isset($json['event'])
-            || !isset($json['payload']['requestParameters'])
-            || !isset($json['payload']['documentName'])
+            ! isset($json['event'])
+            || ! isset($json['payload']['requestParameters'])
+            || ! isset($json['payload']['documentName'])
         ) {
             throw new BadRequestException('Invalid payload');
         }
 
-        if (!in_array($json['event'], config('hocuspocus-laravel.events'))) {
+        if (! in_array($json['event'], config('hocuspocus-laravel.events'))) {
             return response();
         }
 
@@ -56,7 +54,7 @@ class HocuspocusLaravel
 
         $document = $this->getDocument($json['payload']['documentName']);
 
-        if (!$user->can(config('hocuspocus-laravel.policy_method_name'), $document)) {
+        if (! $user->can(config('hocuspocus-laravel.policy_method_name'), $document)) {
             throw new AuthorizationException("User is not allowed to access this document");
         }
 
@@ -68,39 +66,10 @@ class HocuspocusLaravel
     }
 
     /**
-     * Handle onConnect webhook
-     * @param array $payload
-     * @param Collaborative $document
-     * @param Authenticatable $user
-     * @return JsonResponse
-     */
-    protected function handleOnConnect(array $payload, Collaborative $document, Authenticatable $user): JsonResponse
-    {
-        dispatch(new Connect($user, $document));
-
-        return response()->json(
-            $user->toArray()
-        );
-    }
-
-    /**
-     * Handle onDisconnect webhook
-     * @param array $payload
-     * @param Collaborative $document
-     * @param Authenticatable $user
-     */
-    protected function handleOnDisconnect(array $payload, Collaborative $document, Authenticatable $user)
-    {
-        dispatch(new Disconnect($user, $document));
-
-        return response('handled');
-    }
-
-    /**
      * Handle onCreate webhook
-     * @param array $payload
-     * @param Collaborative $document
-     * @param Authenticatable $user
+     * @param  array  $payload
+     * @param  Collaborative  $document
+     * @param  Authenticatable  $user
      * @return JsonResponse
      */
     protected function handleOnCreate(array $payload, Collaborative $document, Authenticatable $user): JsonResponse
@@ -116,9 +85,10 @@ class HocuspocusLaravel
 
     /**
      * Handle onChange webhook
-     * @param array $payload
-     * @param Collaborative $document
-     * @param Authenticatable $user
+     * @param  array  $payload
+     * @param  Collaborative  $document
+     * @param  Authenticatable  $user
+     * @return Application|ResponseFactory|\Illuminate\Foundation\Application|Response
      */
     protected function handleOnChange(array $payload, Collaborative $document, Authenticatable $user)
     {
@@ -128,10 +98,9 @@ class HocuspocusLaravel
     }
 
 
-
     /**
      * Get the document by the given name.
-     * @param string $name
+     * @param  string  $name
      * @return mixed
      * @throws ReflectionException|Exception|ModelNotFoundException
      */
@@ -147,11 +116,11 @@ class HocuspocusLaravel
         $interface = Collaborative::class;
         $reflection = new ReflectionClass($parts[0]);
 
-        if (!$reflection->implementsInterface($interface)) {
+        if (! $reflection->implementsInterface($interface)) {
             throw new Exception("\"{$parts[0]}\" doesn't implement \"{$interface}\"");
         }
 
-        if (!$reflection->isSubclassOf(Model::class)) {
+        if (! $reflection->isSubclassOf(Model::class)) {
             throw new Exception("\"{$parts[0]}\" is not an Eloquent Model");
         }
 
@@ -160,7 +129,7 @@ class HocuspocusLaravel
 
     /**
      * Verify the signature of the given request.
-     * @param Request $request
+     * @param  Request  $request
      * @return bool
      */
     protected function verifySignature(Request $request): bool
