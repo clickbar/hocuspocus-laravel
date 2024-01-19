@@ -1,7 +1,9 @@
 # Hocuspocus for Laravel
+
 Seamlessly integrates a [Hocuspocus](https://www.hocuspocus.dev) backend with Laravel.
 
 ## Installation
+
 You can install the package via composer:
 
 ```bash
@@ -68,27 +70,18 @@ class TextDocumentPolicy
 }
 ```
 
-In the frontend, add the `collaborationAccessToken` and `collaborationDocumentName` to your WebSocket provider:
-
-```blade
-<script>
-  window.collaborationAccessToken = '{{ optional(auth()->user())->getCollaborationAccessToken() }}';
-  window.collaborationDocumentName = '{{ $yourTextDocument->getCollaborationDocumentName() }}'
-</script>
-```
-
 ```js
-import { HocuspocusProvider } from '@hocuspocus/provider'
-import * as Y from 'yjs'
+import { HocuspocusProvider } from "@hocuspocus/provider";
+import * as Y from "yjs";
 
 const provider = new HocuspocusProvider({
-  document: new Y.Doc(),
-  url: 'ws://localhost:1234',
-  name: window.collaborationDocumentName,
-  parameters: {
-    access_token: window.collaborationAccessToken,
-  },
-})
+    document: new Y.Doc(),
+    url: "ws://localhost:1234",
+    name: window.collaborationDocumentName,
+    parameters: {
+        access_token: window.collaborationAccessToken,
+    },
+});
 ```
 
 Configure a random secret key in your `.env`:
@@ -100,29 +93,31 @@ HOCUSPOCUS_SECRET="459824aaffa928e05f5b1caec411ae5f"
 Finally set up Hocuspocus with the webhook extension:
 
 ```js
-import { Server } from '@hocuspocus/server'
-import { Webhook, Events } from '@hocuspocus/extension-webhook'
-import { TiptapTransformer } from '@hocuspocus/transformer'
+import { Server } from "@hocuspocus/server";
+import { Webhook, Events } from "@hocuspocus/extension-webhook";
+import { TiptapTransformer } from "@hocuspocus/transformer";
 
 const server = Server.configure({
-  extensions: [
-    new Webhook({
-      // url to your application
-      url: 'https://example.com/api/documents',
-      // the same secret you configured earlier in your .env
-      secret: '459824aaffa928e05f5b1caec411ae5f',
+    extensions: [
+        new Webhook({
+            // url to your application
+            url: "https://example.com/api/documents",
+            // the same secret you configured earlier in your .env
+            secret: "459824aaffa928e05f5b1caec411ae5f",
 
-      transformer: TiptapTransformer,
-    }),
-  ],
-})
+            transformer: TiptapTransformer,
+        }),
+    ],
+});
 
-server.listen()
+server.listen();
 ```
 
 ## Credits
-- [Kris Siepert](https://github.com/kriskbx)
-- [All Contributors](../../contributors)
+
+-   [Kris Siepert](https://github.com/kriskbx)
+-   [All Contributors](../../contributors)
 
 ## License
+
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
